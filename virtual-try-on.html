@@ -1,15 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Virtual Try-On Studio</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Virtual Try-On Studio (Multi-Item)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
+        body { font-family: 'Inter', sans-serif; }
         .loader {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3498db;
@@ -18,25 +16,29 @@
             height: 40px;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        #uploaded-clothing-gallery img.selected {
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #uploaded-clothing-gallery .selected .clothing-image {
             border: 3px solid #3b82f6;
             box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+        .clothing-card { position: relative; overflow: hidden; border-radius: 0.5rem; background: white; padding: 0.25rem; }
+        .clothing-card .controls { position: absolute; left: 6px; top: 6px; display:flex; gap:6px; align-items:center; z-index: 20; }
+        .clothing-card .type-select { position: absolute; right: 6px; bottom: 6px; z-index: 20; }
+        .clothing-card img { display:block; width:100%; height:160px; object-fit:cover; border-radius: 0.5rem; }
+        .clothing-checkbox {
+            width:18px; height:18px; accent-color:#2563eb; border-radius: 4px;
         }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
-
     <div class="container mx-auto p-4 md:p-8 max-w-6xl">
         <header class="text-center mb-8">
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Virtual Try-On Studio</h1>
-            <p class="text-lg text-gray-600 mt-2">Upload your photo, upload clothing, and see how it looks!</p>
+            <p class="text-lg text-gray-600 mt-2">Upload your photo, upload clothing, and try multiple items at once!</p>
         </header>
 
         <main class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Left: Uploads & Controls -->
             <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col">
                 <div class="mb-6">
                     <h2 class="text-2xl font-semibold mb-4">1. Upload Your Photo</h2>
@@ -56,7 +58,7 @@
                 </div>
 
                 <div class="mb-6">
-                    <h2 class="text-2xl font-semibold mb-4">2. Upload Clothing Item</h2>
+                    <h2 class="text-2xl font-semibold mb-4">2. Upload Clothing Item(s)</h2>
                     <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center cursor-pointer hover:border-blue-500 transition" id="clothing-image-dropzone">
                         <input type="file" id="clothing-image-upload" class="hidden" accept="image/*" multiple>
                         <div id="clothing-upload-prompt">
@@ -69,29 +71,33 @@
                             <p class="text-xs text-gray-500">Upload one or more items</p>
                         </div>
                     </div>
-                    <h3 class="text-xl font-semibold mt-6 mb-2">Select an item to try on:</h3>
-                    <div id="uploaded-clothing-gallery" class="grid grid-cols-2 sm:grid-cols-3 gap-4 min-h-[120px] bg-gray-50 p-2 rounded-lg border">
-                        </div>
-                </div>
-                
-                <div class="mb-6">
-                    <h2 class="text-2xl font-semibold mb-4">3. Select Apparel Type</h2>
-                    <select id="apparel-type" class="w-full p-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="dress">Dress</option>
-                        <option value="shirt">Shirt</option>
-                        <option value="t-shirt">T-Shirt</option>
-                        <option value="suit">Suit</option>
-                        <option value="pant">Pant</option>
-                        <option value="jeans">Jeans</option>
-                        <option value="saree">Saree</option>
-                    </select>
+
+                    <h3 class="text-xl font-semibold mt-6 mb-2">Select items to try on (multiple allowed):</h3>
+                    <div id="uploaded-clothing-gallery" class="grid grid-cols-2 sm:grid-cols-3 gap-4 min-h-[120px] bg-gray-50 p-2 rounded-lg border"></div>
+
+                    <p class="text-sm text-gray-500 mt-2">Each clothing card has a checkbox (select), and a type dropdown. Selected items are included in the prompt.</p>
                 </div>
 
-                 <button id="try-on-button" class="w-full mt-auto bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100" disabled>
+                <div class="mb-4">
+                    <h2 class="text-2xl font-semibold mb-4">3. Prompt & Options</h2>
+                    <div class="flex gap-3 items-center mb-2">
+                        <label class="flex items-center gap-2 text-sm">
+                            <input id="auto-update-prompt" type="checkbox" checked class="accent-blue-600">
+                            <span>Auto update prompt from selected items</span>
+                        </label>
+                        <button id="reset-prompt" class="ml-auto bg-gray-100 px-3 py-1 rounded text-sm hover:bg-gray-200">Reset Prompt</button>
+                    </div>
+
+                    <textarea id="final-prompt" rows="5" class="w-full p-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Final prompt for the model"></textarea>
+                    <p class="text-xs text-gray-500 mt-2">You can edit the above prompt before sending. The auto-generated prompt tries to be descriptive; feel free to customize.</p>
+                </div>
+
+                <button id="try-on-button" class="w-full mt-auto bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100" disabled>
                     Apply Clothing
                 </button>
             </div>
 
+            <!-- Right: Result -->
             <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col items-center justify-center min-h-[400px]">
                  <h2 class="text-2xl font-semibold mb-4 text-center">Your New Look</h2>
                 <div id="result-container" class="w-full h-full flex items-center justify-center">
@@ -105,56 +111,51 @@
     </div>
 
     <script>
-        // User image elements
+        // ----- DOM elements -----
         const userImageUpload = document.getElementById('user-image-upload');
         const userImageDropzone = document.getElementById('user-image-dropzone');
         const userImagePreview = document.getElementById('user-image-preview');
         const userUploadPrompt = document.getElementById('user-upload-prompt');
 
-        // Clothing image elements
         const clothingImageUpload = document.getElementById('clothing-image-upload');
         const clothingImageDropzone = document.getElementById('clothing-image-dropzone');
         const uploadedClothingGallery = document.getElementById('uploaded-clothing-gallery');
-        const apparelTypeSelect = document.getElementById('apparel-type');
 
-        // Control and result elements
         const tryOnButton = document.getElementById('try-on-button');
         const resultImage = document.getElementById('result-image');
         const loader = document.getElementById('loader');
         const errorMessage = document.getElementById('error-message');
         const resultPlaceholder = document.getElementById('result-placeholder');
 
-        let userImageBase64 = null;
-        let selectedClothingBase64 = null;
-        let uploadedClothingItems = [];
+        const finalPromptTextarea = document.getElementById('final-prompt');
+        const autoUpdatePromptCheckbox = document.getElementById('auto-update-prompt');
+        const resetPromptBtn = document.getElementById('reset-prompt');
 
-        // --- User Image Upload Handling ---
+        // ----- State -----
+        let userImageBase64 = null;
+        let userImageDataUrl = null;
+        let uploadedClothingItems = []; // { id, base64, dataUrl, type, selected }
+        const APPAREL_OPTIONS = ['dress','shirt','t-shirt','suit','pant','jeans','saree','shoes','hat','jacket','skirt'];
+
+        // ----- User Image Upload Handling -----
         userImageDropzone.addEventListener('click', () => userImageUpload.click());
-        userImageDropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            userImageDropzone.classList.add('border-blue-500', 'bg-blue-50');
-        });
-        userImageDropzone.addEventListener('dragleave', () => {
-            userImageDropzone.classList.remove('border-blue-500', 'bg-blue-50');
-        });
+        userImageDropzone.addEventListener('dragover', (e) => { e.preventDefault(); userImageDropzone.classList.add('border-blue-500', 'bg-blue-50'); });
+        userImageDropzone.addEventListener('dragleave', () => { userImageDropzone.classList.remove('border-blue-500', 'bg-blue-50'); });
         userImageDropzone.addEventListener('drop', (e) => {
             e.preventDefault();
             userImageDropzone.classList.remove('border-blue-500', 'bg-blue-50');
-            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                handleUserFile(e.dataTransfer.files[0]);
-            }
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) handleUserFile(e.dataTransfer.files[0]);
         });
         userImageUpload.addEventListener('change', (e) => {
-            if (e.target.files && e.target.files[0]) {
-                handleUserFile(e.target.files[0]);
-            }
+            if (e.target.files && e.target.files[0]) handleUserFile(e.target.files[0]);
         });
-        
+
         function handleUserFile(file) {
             const reader = new FileReader();
             reader.onload = (e) => {
-                userImageBase64 = e.target.result.split(',')[1];
-                userImagePreview.src = e.target.result;
+                userImageDataUrl = e.target.result;
+                userImageBase64 = userImageDataUrl.split(',')[1];
+                userImagePreview.src = userImageDataUrl;
                 userImagePreview.classList.remove('hidden');
                 userUploadPrompt.classList.add('hidden');
                 checkButtonState();
@@ -162,147 +163,217 @@
             reader.readAsDataURL(file);
         }
 
-        // --- Clothing Image Upload Handling ---
+        // ----- Clothing Upload Handling -----
         clothingImageDropzone.addEventListener('click', () => clothingImageUpload.click());
-        clothingImageDropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            clothingImageDropzone.classList.add('border-blue-500', 'bg-blue-50');
-        });
-        clothingImageDropzone.addEventListener('dragleave', () => {
-            clothingImageDropzone.classList.remove('border-blue-500', 'bg-blue-50');
-        });
+        clothingImageDropzone.addEventListener('dragover', (e) => { e.preventDefault(); clothingImageDropzone.classList.add('border-blue-500', 'bg-blue-50'); });
+        clothingImageDropzone.addEventListener('dragleave', () => { clothingImageDropzone.classList.remove('border-blue-500', 'bg-blue-50'); });
         clothingImageDropzone.addEventListener('drop', (e) => {
             e.preventDefault();
             clothingImageDropzone.classList.remove('border-blue-500', 'bg-blue-50');
-            if (e.dataTransfer.files) {
-                handleClothingFiles(e.dataTransfer.files);
-            }
+            if (e.dataTransfer.files) handleClothingFiles(e.dataTransfer.files);
         });
         clothingImageUpload.addEventListener('change', (e) => {
-            if (e.target.files) {
-                handleClothingFiles(e.target.files);
-            }
+            if (e.target.files) handleClothingFiles(e.target.files);
         });
 
         function handleClothingFiles(files) {
-            uploadedClothingGallery.innerHTML = ''; // Clear previous items
-            uploadedClothingItems = [];
-            selectedClothingBase64 = null; // Deselect item
+    Array.from(files).forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const dataUrl = e.target.result;
+            const base64 = dataUrl.split(',')[1];
+            const id = Date.now() + Math.floor(Math.random() * 10000); // unique id
+            const defaultType = APPAREL_OPTIONS[(uploadedClothingItems.length + index) % APPAREL_OPTIONS.length] || 'dress';
 
-            Array.from(files).forEach((file, index) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const base64 = e.target.result.split(',')[1];
-                    const item = { id: Date.now() + index, base64: base64 };
-                    uploadedClothingItems.push(item);
+            const item = { id, base64, dataUrl, type: defaultType, selected: false };
+            uploadedClothingItems.push(item);
 
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.alt = "Uploaded clothing item";
-                    img.className = "w-full h-40 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity";
-                    img.addEventListener('click', () => selectClothingItem(img, item.base64));
-                    uploadedClothingGallery.appendChild(img);
+            // Build DOM card
+            const card = document.createElement('div');
+            card.className = 'clothing-card shadow-sm';
 
-                    // Automatically select the first uploaded clothing item
-                    if (index === 0) {
-                        selectClothingItem(img, item.base64);
-                    }
-                };
-                reader.readAsDataURL(file);
+            // controls: checkbox
+            const controls = document.createElement('div');
+            controls.className = 'controls';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'clothing-checkbox';
+            checkbox.title = 'Select to include this item in the try-on';
+            checkbox.addEventListener('change', (evt) => toggleSelectClothing(id, evt.target.checked, card));
+            controls.appendChild(checkbox);
+            card.appendChild(controls);
+
+            const img = document.createElement('img');
+            img.src = dataUrl;
+            img.alt = "Uploaded clothing item";
+            img.className = 'clothing-image';
+            img.style.cursor = 'pointer';
+            img.addEventListener('click', () => {
+                checkbox.checked = !checkbox.checked;
+                checkbox.dispatchEvent(new Event('change'));
             });
-        }
+            card.appendChild(img);
 
-        function selectClothingItem(element, base64) {
-            // Remove selection from others
-            document.querySelectorAll('#uploaded-clothing-gallery img').forEach(img => img.classList.remove('selected'));
-            
-            // Add selection to clicked item
-            element.classList.add('selected');
-            
-            selectedClothingBase64 = base64;
+            // type select
+            const typeSelect = document.createElement('select');
+            typeSelect.className = 'type-select p-2 rounded bg-white border text-sm';
+            typeSelect.title = 'Assign apparel type for this image';
+            APPAREL_OPTIONS.forEach(opt => {
+                const o = document.createElement('option'); 
+                o.value = opt; 
+                o.textContent = opt.charAt(0).toUpperCase() + opt.slice(1);
+                if (opt === defaultType) o.selected = true;
+                typeSelect.appendChild(o);
+            });
+            typeSelect.addEventListener('change', (e) => {
+                const found = uploadedClothingItems.find(it => it.id === id);
+                if (found) found.type = e.target.value;
+                if (autoUpdatePromptCheckbox.checked) updatePrompt();
+            });
+            card.appendChild(typeSelect);
+
+            uploadedClothingGallery.appendChild(card);
+
+            // Auto-select the first item in this batch
+            if (index === 0 && uploadedClothingItems.length === 1) {
+                checkbox.checked = true;
+                checkbox.dispatchEvent(new Event('change'));
+            }
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+        function toggleSelectClothing(id, isSelected, cardElement) {
+            const found = uploadedClothingItems.find(it => it.id === id);
+            if (!found) return;
+            found.selected = isSelected;
+            if (isSelected) {
+                cardElement.classList.add('selected');
+            } else {
+                cardElement.classList.remove('selected');
+            }
+            if (autoUpdatePromptCheckbox.checked) updatePrompt();
             checkButtonState();
         }
 
-        function checkButtonState() {
-            tryOnButton.disabled = !(userImageBase64 && selectedClothingBase64);
+        function getSelectedItems() {
+            return uploadedClothingItems.filter(it => it.selected);
         }
-        
-        // --- API Call and Result Handling ---
+
+        // ----- Prompt handling -----
+        function buildDefaultPrompt() {
+            const selected = getSelectedItems();
+            if (!selected || selected.length === 0) {
+                return 'Take the apparel items from the provided clothing images and realistically place them on the person in the user\'s image. Make sure the fit is natural and the lighting matches. Do not edit anything else. Generate only the final image.';
+            }
+
+            const listText = selected.map((it, idx) => `${idx + 1}) ${it.type}`).join('; ');
+            return `Take the following apparel items from the provided clothing images and realistically place them on the person in the user's image: ${listText}. Make sure each item fits naturally, matches the subject's pose, and the lighting and shadows match the scene. Keep the person's face and other details unchanged. Do not add or remove background elements. Generate only the final composite image.`;
+        }
+
+        function updatePrompt() {
+            finalPromptTextarea.value = buildDefaultPrompt();
+        }
+
+        resetPromptBtn.addEventListener('click', () => {
+            updatePrompt();
+            finalPromptTextarea.focus();
+        });
+
+        // If auto update changes, update prompt immediately if enabled
+        autoUpdatePromptCheckbox.addEventListener('change', () => {
+            if (autoUpdatePromptCheckbox.checked) updatePrompt();
+        });
+
+        // Initialize prompt
+        updatePrompt();
+
+        // ----- Button enabling -----
+        function checkButtonState() {
+            const hasUserImage = !!userImageDataUrl;
+            const hasSelectedClothing = getSelectedItems().length > 0;
+            tryOnButton.disabled = !(hasUserImage && hasSelectedClothing);
+        }
+
+        // ----- API Call and Result Handling -----
         async function applyClothing() {
-            if (!userImageBase64 || !selectedClothingBase64) {
-                errorMessage.textContent = 'Please upload your photo and select a clothing item.';
+            errorMessage.textContent = '';
+            const selected = getSelectedItems();
+            if (!userImageDataUrl || selected.length === 0) {
+                errorMessage.textContent = 'Please upload your photo and select at least one clothing item.';
                 return;
             }
 
             loader.classList.remove('hidden');
             resultImage.classList.add('hidden');
             resultPlaceholder.classList.remove('hidden');
-            errorMessage.textContent = '';
             tryOnButton.disabled = true;
 
-            const apparelType = apparelTypeSelect.value;
-            const textPrompt = `Take the ${apparelType} from the provided clothing image and realistically place it on the person in the user's image. Make sure the fit is natural and the lighting matches. Do not edit anything else. Generate only the final image.`;
+            // Use the user's edited prompt (textarea)
+            const textPrompt = finalPromptTextarea.value.trim() || buildDefaultPrompt();
 
-            const apiKey = "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"; // Replace with your OpenRouter Key
+            // Build messages array: text prompt first, then user image, then each clothing image
+            const messagesContent = [
+                { type: "text", text: textPrompt },
+                { type: "image_url", image_url: { url: userImageDataUrl } }
+            ];
+
+            // Append each selected clothing dataUrl in the order they appear
+            selected.forEach(it => {
+                messagesContent.push({ type: "image_url", image_url: { url: it.dataUrl }});
+            });
+
+            // API details — replace with your real key
+            const apiKey = "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"; // <<-- REPLACE WITH VALID KEY
             const apiUrl = "https://openrouter.ai/api/v1/chat/completions";
-            
+
             const payload = {
                 model: "google/gemini-2.5-flash-image-preview",
                 messages: [{
                     role: "user",
-                    content: [
-                        { type: "text", text: textPrompt },
-                        { 
-                            type: "image_url", 
-                            image_url: { url: `data:image/jpeg;base64,${userImageBase64}` } 
-                        },
-                        { 
-                            type: "image_url", 
-                            image_url: { url: `data:image/jpeg;base64,${selectedClothingBase64}` } 
-                        }
-                    ]
+                    content: messagesContent
                 }]
             };
 
             try {
                 const response = await fetch(apiUrl, {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${apiKey}`
                     },
                     body: JSON.stringify(payload)
                 });
-                
+
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error ? errorData.error.message : 'An unknown error occurred.');
+                    const errorData = await response.json().catch(() => null);
+                    throw new Error(errorData?.error?.message || `API returned status ${response.status}`);
                 }
-                
+
                 const result = await response.json();
-                
-                // **MODIFIED SECTION: Extract image from the correct location**
-                // The API returns the image in a separate `images` array, not in the `content` field.
+
+                // The API often returns images in choices[0].message.images
                 const imagesArray = result?.choices?.[0]?.message?.images;
                 const imagePart = Array.isArray(imagesArray) && imagesArray.length > 0 ? imagesArray[0] : null;
                 const dataUri = imagePart?.image_url?.url;
                 const base64Data = dataUri ? dataUri.split(',')[1] : null;
 
                 if (!base64Data) {
-                    // Provide a more accurate error message if image data is still not found.
-                    console.log("Full API Response:", result); // Log the full response for debugging
+                    console.error("Full API Response:", result);
                     const textContent = result?.choices?.[0]?.message?.content;
                     if (textContent) {
-                        throw new Error(`API returned a text response but no image: ${textContent}`);
+                        throw new Error(`API returned text but no image: ${textContent}`);
                     }
-                    throw new Error('Could not find image data in the API response. Check the console for the full response.');
+                    throw new Error('Could not find image data in the API response.');
                 }
-                
-                resultImage.src = `data:image/png;base64,${base64Data}`;
 
-            } catch (error) {
-                console.error("API Error:", error);
-                errorMessage.textContent = `Error: ${error.message}. Please try again.`;
+                resultImage.src = `data:image/png;base64,${base64Data}`;
+                errorMessage.textContent = '';
+
+            } catch (err) {
+                console.error("API Error:", err);
+                errorMessage.textContent = `Error: ${err.message}`;
                 resultImage.src = 'https://placehold.co/400x600/e2e8f0/cbd5e0?text=Error';
             } finally {
                 loader.classList.add('hidden');
@@ -311,10 +382,17 @@
                 tryOnButton.disabled = false;
             }
         }
-        
+
         tryOnButton.addEventListener('click', applyClothing);
 
+        // Make sure UI state updates if user manually edits prompt (we won't overwrite unless auto-update is on)
+        finalPromptTextarea.addEventListener('input', () => {
+            // If user types, disable auto-update to avoid stomping their edits
+            if (document.activeElement === finalPromptTextarea && autoUpdatePromptCheckbox.checked) {
+                // optionally we could keep auto update checked but not override while user is editing;
+                // simple approach: leave checkbox as-is, but we will not auto-update while user focuses the field.
+            }
+        });
     </script>
-
 </body>
 </html>
