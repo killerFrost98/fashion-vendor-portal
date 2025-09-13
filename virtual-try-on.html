@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Try-On Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #uploaded-clothing-gallery img.selected {
+            border: 3px solid #3b82f6;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Virtual Try-On Studio</h1>
+            <p class="text-lg text-gray-600 mt-2">Upload your photo, upload clothing, and see how it looks!</p>
+        </header>
+
+        <main class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-semibold mb-4">1. Upload Your Photo</h2>
+                    <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center cursor-pointer hover:border-blue-500 transition" id="user-image-dropzone">
+                        <input type="file" id="user-image-upload" class="hidden" accept="image/*">
+                        <img id="user-image-preview" src="https://placehold.co/400x600/e2e8f0/cbd5e0?text=Your+Image" alt="User Image Preview" class="mx-auto max-h-60 rounded-md hidden">
+                        <div id="user-upload-prompt">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-600">
+                                <span class="font-semibold text-blue-600">Click to upload</span> or drag and drop
+                            </p>
+                            <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h2 class="text-2xl font-semibold mb-4">2. Upload Clothing Item</h2>
+                    <div class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center cursor-pointer hover:border-blue-500 transition" id="clothing-image-dropzone">
+                        <input type="file" id="clothing-image-upload" class="hidden" accept="image/*" multiple>
+                        <div id="clothing-upload-prompt">
+                             <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-600">
+                                <span class="font-semibold text-blue-600">Click to upload</span> or drag and drop
+                            </p>
+                            <p class="text-xs text-gray-500">Upload one or more items</p>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-semibold mt-6 mb-2">Select an item to try on:</h3>
+                    <div id="uploaded-clothing-gallery" class="grid grid-cols-2 sm:grid-cols-3 gap-4 min-h-[120px] bg-gray-50 p-2 rounded-lg border">
+                        </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h2 class="text-2xl font-semibold mb-4">3. Select Apparel Type</h2>
+                    <select id="apparel-type" class="w-full p-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="dress">Dress</option>
+                        <option value="shirt">Shirt</option>
+                        <option value="t-shirt">T-Shirt</option>
+                        <option value="suit">Suit</option>
+                        <option value="pant">Pant</option>
+                        <option value="jeans">Jeans</option>
+                        <option value="saree">Saree</option>
+                    </select>
+                </div>
+
+                 <button id="try-on-button" class="w-full mt-auto bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100" disabled>
+                    Apply Clothing
+                </button>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col items-center justify-center min-h-[400px]">
+                 <h2 class="text-2xl font-semibold mb-4 text-center">Your New Look</h2>
+                <div id="result-container" class="w-full h-full flex items-center justify-center">
+                    <div id="loader" class="loader hidden"></div>
+                     <img id="result-image" src="https://placehold.co/400x600/e2e8f0/cbd5e0?text=Result" alt="Try-on result" class="max-w-full max-h-[80vh] rounded-lg">
+                     <p id="result-placeholder" class="text-gray-500 text-center hidden">The generated image will appear here.</p>
+                </div>
+                 <div id="error-message" class="mt-4 text-red-600 text-center font-semibold"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // User image elements
+        const userImageUpload = document.getElementById('user-image-upload');
+        const userImageDropzone = document.getElementById('user-image-dropzone');
+        const userImagePreview = document.getElementById('user-image-preview');
+        const userUploadPrompt = document.getElementById('user-upload-prompt');
+
+        // Clothing image elements
+        const clothingImageUpload = document.getElementById('clothing-image-upload');
+        const clothingImageDropzone = document.getElementById('clothing-image-dropzone');
+        const uploadedClothingGallery = document.getElementById('uploaded-clothing-gallery');
+        const apparelTypeSelect = document.getElementById('apparel-type');
+
+        // Control and result elements
+        const tryOnButton = document.getElementById('try-on-button');
+        const resultImage = document.getElementById('result-image');
+        const loader = document.getElementById('loader');
+        const errorMessage = document.getElementById('error-message');
+        const resultPlaceholder = document.getElementById('result-placeholder');
+
+        let userImageBase64 = null;
+        let selectedClothingBase64 = null;
+        let uploadedClothingItems = [];
+
+        // --- User Image Upload Handling ---
+        userImageDropzone.addEventListener('click', () => userImageUpload.click());
+        userImageDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            userImageDropzone.classList.add('border-blue-500', 'bg-blue-50');
+        });
+        userImageDropzone.addEventListener('dragleave', () => {
+            userImageDropzone.classList.remove('border-blue-500', 'bg-blue-50');
+        });
+        userImageDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            userImageDropzone.classList.remove('border-blue-500', 'bg-blue-50');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                handleUserFile(e.dataTransfer.files[0]);
+            }
+        });
+        userImageUpload.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                handleUserFile(e.target.files[0]);
+            }
+        });
+        
+        function handleUserFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                userImageBase64 = e.target.result.split(',')[1];
+                userImagePreview.src = e.target.result;
+                userImagePreview.classList.remove('hidden');
+                userUploadPrompt.classList.add('hidden');
+                checkButtonState();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- Clothing Image Upload Handling ---
+        clothingImageDropzone.addEventListener('click', () => clothingImageUpload.click());
+        clothingImageDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            clothingImageDropzone.classList.add('border-blue-500', 'bg-blue-50');
+        });
+        clothingImageDropzone.addEventListener('dragleave', () => {
+            clothingImageDropzone.classList.remove('border-blue-500', 'bg-blue-50');
+        });
+        clothingImageDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            clothingImageDropzone.classList.remove('border-blue-500', 'bg-blue-50');
+            if (e.dataTransfer.files) {
+                handleClothingFiles(e.dataTransfer.files);
+            }
+        });
+        clothingImageUpload.addEventListener('change', (e) => {
+            if (e.target.files) {
+                handleClothingFiles(e.target.files);
+            }
+        });
+
+        function handleClothingFiles(files) {
+            uploadedClothingGallery.innerHTML = ''; // Clear previous items
+            uploadedClothingItems = [];
+            selectedClothingBase64 = null; // Deselect item
+
+            Array.from(files).forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const base64 = e.target.result.split(',')[1];
+                    const item = { id: Date.now() + index, base64: base64 };
+                    uploadedClothingItems.push(item);
+
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = "Uploaded clothing item";
+                    img.className = "w-full h-40 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity";
+                    img.addEventListener('click', () => selectClothingItem(img, item.base64));
+                    uploadedClothingGallery.appendChild(img);
+
+                    // Automatically select the first uploaded clothing item
+                    if (index === 0) {
+                        selectClothingItem(img, item.base64);
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function selectClothingItem(element, base64) {
+            // Remove selection from others
+            document.querySelectorAll('#uploaded-clothing-gallery img').forEach(img => img.classList.remove('selected'));
+            
+            // Add selection to clicked item
+            element.classList.add('selected');
+            
+            selectedClothingBase64 = base64;
+            checkButtonState();
+        }
+
+        function checkButtonState() {
+            tryOnButton.disabled = !(userImageBase64 && selectedClothingBase64);
+        }
+        
+        // --- API Call and Result Handling ---
+        async function applyClothing() {
+            if (!userImageBase64 || !selectedClothingBase64) {
+                errorMessage.textContent = 'Please upload your photo and select a clothing item.';
+                return;
+            }
+
+            loader.classList.remove('hidden');
+            resultImage.classList.add('hidden');
+            resultPlaceholder.classList.remove('hidden');
+            errorMessage.textContent = '';
+            tryOnButton.disabled = true;
+
+            const apparelType = apparelTypeSelect.value;
+            const textPrompt = `Take the ${apparelType} from the provided clothing image and realistically place it on the person in the user's image. Make sure the fit is natural and the lighting matches. Do not edit anything else. Generate only the final image.`;
+
+            const apiKey = "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"; // Replace with your OpenRouter Key
+            const apiUrl = "https://openrouter.ai/api/v1/chat/completions";
+            
+            const payload = {
+                model: "google/gemini-2.5-flash-image-preview",
+                messages: [{
+                    role: "user",
+                    content: [
+                        { type: "text", text: textPrompt },
+                        { 
+                            type: "image_url", 
+                            image_url: { url: `data:image/jpeg;base64,${userImageBase64}` } 
+                        },
+                        { 
+                            type: "image_url", 
+                            image_url: { url: `data:image/jpeg;base64,${selectedClothingBase64}` } 
+                        }
+                    ]
+                }]
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error ? errorData.error.message : 'An unknown error occurred.');
+                }
+                
+                const result = await response.json();
+                
+                // **MODIFIED SECTION: Extract image from the correct location**
+                // The API returns the image in a separate `images` array, not in the `content` field.
+                const imagesArray = result?.choices?.[0]?.message?.images;
+                const imagePart = Array.isArray(imagesArray) && imagesArray.length > 0 ? imagesArray[0] : null;
+                const dataUri = imagePart?.image_url?.url;
+                const base64Data = dataUri ? dataUri.split(',')[1] : null;
+
+                if (!base64Data) {
+                    // Provide a more accurate error message if image data is still not found.
+                    console.log("Full API Response:", result); // Log the full response for debugging
+                    const textContent = result?.choices?.[0]?.message?.content;
+                    if (textContent) {
+                        throw new Error(`API returned a text response but no image: ${textContent}`);
+                    }
+                    throw new Error('Could not find image data in the API response. Check the console for the full response.');
+                }
+                
+                resultImage.src = `data:image/png;base64,${base64Data}`;
+
+            } catch (error) {
+                console.error("API Error:", error);
+                errorMessage.textContent = `Error: ${error.message}. Please try again.`;
+                resultImage.src = 'https://placehold.co/400x600/e2e8f0/cbd5e0?text=Error';
+            } finally {
+                loader.classList.add('hidden');
+                resultImage.classList.remove('hidden');
+                resultPlaceholder.classList.add('hidden');
+                tryOnButton.disabled = false;
+            }
+        }
+        
+        tryOnButton.addEventListener('click', applyClothing);
+
+    </script>
+
+</body>
+</html>
